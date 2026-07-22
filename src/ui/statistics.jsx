@@ -8,8 +8,8 @@ import ExtraLocationsTable from './extra-locations-table';
 class Statistics extends React.PureComponent {
   static WIDTH_DIFFERENCE = -10;
 
-  static getWidth() {
-    return ExtraLocationsTable.getWidth() + this.WIDTH_DIFFERENCE;
+  static getWidth(props = {}) {
+    return ExtraLocationsTable.getWidth(props) + this.WIDTH_DIFFERENCE;
   }
 
   render() {
@@ -23,7 +23,7 @@ class Statistics extends React.PureComponent {
     return (
       <div
         className="statistics"
-        style={{ backgroundColor, width: Statistics.getWidth() }}
+        style={{ backgroundColor, width: Statistics.getWidth(this.props) }}
       >
         <table className="left-table">
           <tbody>
@@ -73,6 +73,7 @@ Statistics.propTypes = {
   disableLogic: PropTypes.bool.isRequired,
   logic: PropTypes.instanceOf(LogicCalculation).isRequired,
   onlyProgressLocations: PropTypes.bool.isRequired,
+  viewingEntrances: PropTypes.bool.isRequired,
 };
 
 export default Statistics;

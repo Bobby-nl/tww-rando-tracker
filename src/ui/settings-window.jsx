@@ -2,6 +2,9 @@ import _ from 'lodash';
 import PropTypes from 'prop-types';
 import React from 'react';
 
+import Permalink from '../services/permalink';
+import Settings from '../services/settings';
+
 import ColorPicker from './color-picker';
 import KeyDownWrapper from './key-down-wrapper';
 
@@ -253,13 +256,20 @@ class SettingsWindow extends React.PureComponent {
     } = this.state;
     const {
       clearAllIncludesMail,
+      clearAllIncludesBoss,
       disableLogic,
+      enableItemCycling,
       extraLocationsBackground,
       itemsTableBackground,
       rightClickToClearAll,
+      settingsWindowPosition,
       showBeedleLocations,
+      showClearAll,
       showCyclosLocations,
+      showDungeonMapsAndCompasses,
       showGhostShipLocations,
+      showRequiredBossToggle,
+      showResetAll,
       showSalvageCorpLocations,
       sphereTrackingBackground,
       statisticsBackground,
@@ -324,6 +334,11 @@ class SettingsWindow extends React.PureComponent {
               'trackNonProgressBlueChuJelly',
             )}
             {this.checkboxRow(
+              'Enable Item Cycling',
+              enableItemCycling,
+              'enableItemCycling',
+            )}
+            {this.checkboxRow(
               'Right Click to Clear All',
               rightClickToClearAll,
               'rightClickToClearAll',
@@ -332,6 +347,11 @@ class SettingsWindow extends React.PureComponent {
               'Clear All Includes Dungeon Mail',
               clearAllIncludesMail,
               'clearAllIncludesMail',
+            )}
+            {this.checkboxRow(
+              'Clear All Includes Boss Heart Container',
+              clearAllIncludesBoss,
+              'clearAllIncludesBoss',
             )}
           </>
         )}
@@ -362,6 +382,28 @@ class SettingsWindow extends React.PureComponent {
               'Show Ghost Ship Locations',
               showGhostShipLocations,
               'showGhostShipLocations',
+            )}
+            {this.checkboxRow(
+              'Show Dungeon Maps and Compasses',
+              showDungeonMapsAndCompasses,
+              'showDungeonMapsAndCompasses',
+            )}
+
+            {this.checkboxRow(
+              'Show Clear All Button',
+              showClearAll,
+              'showClearAll',
+            )}
+            {this.checkboxRow(
+              'Show Reset All Button',
+              showResetAll,
+              'showResetAll',
+            )}
+            {Settings.getOptionValue(Permalink.OPTIONS.REQUIRED_BOSSES)
+              && this.checkboxRow(
+              'Show Required Boss Toggle',
+              showRequiredBossToggle,
+              'showRequiredBossToggle',
             )}
           </>
         )}
@@ -408,8 +450,10 @@ SettingsWindow.defaultProps = {
 };
 
 SettingsWindow.propTypes = {
+  clearAllIncludesBoss: PropTypes.bool.isRequired,
   clearAllIncludesMail: PropTypes.bool.isRequired,
   disableLogic: PropTypes.bool.isRequired,
+  enableItemCycling: PropTypes.bool.isRequired,
   extraLocationsBackground: PropTypes.string,
   itemsTableBackground: PropTypes.string,
   rightClickToClearAll: PropTypes.bool.isRequired,
@@ -419,7 +463,14 @@ SettingsWindow.propTypes = {
   }).isRequired,
   showBeedleLocations: PropTypes.bool.isRequired,
   showCyclosLocations: PropTypes.bool.isRequired,
+  showDungeonMapsAndCompasses: PropTypes.bool.isRequired,
   showGhostShipLocations: PropTypes.bool.isRequired,
+  showRequiredBossToggle: PropTypes.bool.isRequired,
+  showResetAll: PropTypes.bool.isRequired,
+  showSalvageCorpLocations: PropTypes.bool.isRequired,
+  sphereTrackingBackground: PropTypes.string,
+  statisticsBackground: PropTypes.string,
+  toggleSettingsWindow: PropTypes.func.isRequired,
   showSalvageCorpLocations: PropTypes.bool.isRequired,
   sphereTrackingBackground: PropTypes.string,
   statisticsBackground: PropTypes.string,

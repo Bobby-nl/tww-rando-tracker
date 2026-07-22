@@ -121,7 +121,31 @@ describe('Spheres', () => {
         ).toEqual(null);
       });
     });
+    
+    describe('when selected starting items exceed their item limit', () => {
+      beforeEach(() => {
+        fullSetup();
 
+        trackerState = TrackerState.createStateRaw({
+          ...trackerState.readState(),
+          selectedStartingItems: {
+            'Spoils Bag': 5,
+          },
+        });
+      });
+
+      test('does not give more than the maximum item count', () => {
+        const spheres = new Spheres(trackerState);
+
+        expect(
+          spheres.sphereForLocation(
+            'Windfall Island',
+            'Chu Jelly Juice Shop - Give 15 Blue Chu Jelly',
+          ),
+        ).toEqual(null);
+      });
+    });
+    
     describe('when finding an item in each sphere', () => {
       beforeEach(() => {
         fullSetup();

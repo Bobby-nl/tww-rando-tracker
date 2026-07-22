@@ -24,8 +24,8 @@ class Tracker extends React.PureComponent {
 
     this.state = {
       chartListOpen: false,
+      clearAllIncludesBoss: false,
       clearAllIncludesMail: true,
-      settingsWindowOpen: false,
       colors: {
         extraLocationsBackground: null,
         itemsTableBackground: null,
@@ -33,7 +33,9 @@ class Tracker extends React.PureComponent {
         statisticsBackground: null,
       },
       disableLogic: false,
+      enableItemCycling: false,
       isLoading: true,
+      isStartingItemMode: false,
       lastLocation: null,
       onlyProgressLocations: true,
       openedChartForIsland: null,
@@ -42,31 +44,42 @@ class Tracker extends React.PureComponent {
       openedLocation: null,
       openedLocationIsDungeon: null,
       rightClickToClearAll: true,
+      settingsWindowOpen: false,
       settingsWindowPosition: {
         x: 20,
         y: 300,
       },
       showBeedleLocations: false,
+      showClearAll: false,
+      showCyclosLocations: true,
+      showDungeonMapsAndCompasses: false,
+      showGhostShipLocations: true,
+      showRequiredBossToggle: false,
+      showResetAll: true,
       showSalvageCorpLocations: false,
-      showCyclosLocations: false,
-      showGhostShipLocations: false,
-      trackNonProgressCharts: false,
-      trackSpheres: false,
-      viewingEntrances: false,
+      trackNonProgressCharts: true,
+      trackSpheres: true,
+      viewingEntrances: true,
     };
 
     this.initialize();
 
     this.clearAllLocations = this.clearAllLocations.bind(this);
+    this.clearAllLocationsAndDisableBoss = this.clearAllLocationsAndDisableBoss.bind(this);
     this.clearOpenedMenus = this.clearOpenedMenus.bind(this);
     this.decrementItem = this.decrementItem.bind(this);
+    this.disableStartingItemMode = this.disableStartingItemMode.bind(this);
     this.incrementItem = this.incrementItem.bind(this);
     this.toggleChartList = this.toggleChartList.bind(this);
-    this.toggleSettingsWindow = this.toggleSettingsWindow.bind(this);
+    this.toggleClearAll = this.toggleClearAll.bind(this);
+    this.toggleDungeonMapsAndCompasses = this.toggleDungeonMapsAndCompasses.bind(this);
     this.toggleEntrances = this.toggleEntrances.bind(this);
     this.toggleLocationChecked = this.toggleLocationChecked.bind(this);
     this.toggleOnlyProgressLocations = this.toggleOnlyProgressLocations.bind(this);
     this.toggleRequiredBoss = this.toggleRequiredBoss.bind(this);
+    this.toggleSettingsWindow = this.toggleSettingsWindow.bind(this);
+    this.updateStartingItemCount = this.updateStartingItemCount.bind(this);
+    this.toggleStartingItemMode = this.toggleStartingItemMode.bind(this);
     this.unsetChartMapping = this.unsetChartMapping.bind(this);
     this.unsetEntrance = this.unsetEntrance.bind(this);
     this.unsetExit = this.unsetExit.bind(this);
@@ -79,6 +92,7 @@ class Tracker extends React.PureComponent {
     this.updateOpenedLocation = this.updateOpenedLocation.bind(this);
     this.updatePreferences = this.updatePreferences.bind(this);
     this.updateSettingsWindowPosition = this.updateSettingsWindowPosition.bind(this);
+    this.resetZone = this.resetZone.bind(this);
   }
 
   async initialize() {
@@ -141,12 +155,12 @@ class Tracker extends React.PureComponent {
 
   incrementItem(itemName, trackItemLocation) {
     const {
+      enableItemCycling,
       lastLocation,
       trackerState,
     } = this.state;
 
-    let newTrackerState = trackerState.incrementItem(itemName);
-
+    let newTrackerState = trackerState.incrementItem(itemName,enableItemCycling);
     if (trackItemLocation && !_.isNil(lastLocation)) {
       const {
         generalLocation,
@@ -164,11 +178,34 @@ class Tracker extends React.PureComponent {
   }
 
   decrementItem(itemName) {
-    const { trackerState } = this.state;
+    const {
+      enableItemCycling,
+      trackerState,
+    } = this.state;
 
-    const newTrackerState = trackerState.decrementItem(itemName);
+    const newTrackerState = trackerState.decrementItem(
+      itemName,
+      enableItemCycling,
+    );
 
     this.updateTrackerState(newTrackerState);
+  }
+
+    updateStartingItemCount(itemName, amount = 1) {
+    const { trackerState } = this.state;
+
+    const newTrackerState = trackerState.updateStartingItemCount(
+      itemName,
+      amount,
+    );
+
+    this.updateTrackerState(newTrackerState);
+  }
+
+  disableStartingItemMode() {
+    this.setState({
+      isStartingItemMode: false,
+    });
   }
 
   toggleLocationChecked(generalLocation, detailedLocation) {
@@ -183,6 +220,7 @@ class Tracker extends React.PureComponent {
           detailedLocation,
         },
       });
+      this.disableStartingItemMode();
     } else {
       this.setState({ lastLocation: null });
 
@@ -192,16 +230,61 @@ class Tracker extends React.PureComponent {
     this.updateTrackerState(newTrackerState);
   }
 
+  toggleDungeonMapsAndCompasses() {
+    const { showDungeonMapsAndCompasses } = this.state;
+
+    this.updatePreferences({ showDungeonMapsAndCompasses: !showDungeonMapsAndCompasses });
+  }
+
+  toggleClearAll() {
+    this.setState((prev) => ({ showClearAll: !prev.showClearAll }));
+  }
+	
   clearAllLocations(zoneName) {
+    const {
+      clearAllIncludesMail,
+      clearAllIncludesBoss,
+      trackerState,
+    } = this.state;
+
+    const bossLocation = LogicHelper.bossLocation(zoneName);
+
+    let newTrackerState = trackerState.clearBannedLocations(
+      zoneName,
+      {
+        includeAdditionalLocations: clearAllIncludesMail,
+        excludeLocation: clearAllIncludesBoss ? null : bossLocation,
+      },
+    );
+
+    this.updateTrackerState(newTrackerState);
+  }
+
+  resetZone(zoneName) {
+    const { trackerState } = this.state;
+
+    const newTrackerState = trackerState.resetZone(zoneName);
+
+    this.updateTrackerState(newTrackerState);
+  }
+  
+  clearAllLocationsAndDisableBoss(zoneName) {
     const {
       clearAllIncludesMail,
       trackerState,
     } = this.state;
 
-    const newTrackerState = trackerState.clearBannedLocations(
+    let newTrackerState = trackerState.clearBannedLocations(
       zoneName,
       { includeAdditionalLocations: clearAllIncludesMail },
     );
+
+  if (
+    LogicHelper.isBossRequired(zoneName) &&
+    LogicHelper.anyNonRequiredBossesRemaining()
+  ) {
+    LogicHelper.setBossNotRequired(zoneName);
+  }
 
     this.updateTrackerState(newTrackerState);
   }
@@ -360,6 +443,12 @@ class Tracker extends React.PureComponent {
     this.updateTrackerState(newTrackerState);
   }
 
+  updateSettingsWindowPosition(position) {
+    this.updatePreferences({
+      settingsWindowPosition: position,
+    });
+  }
+
   updateOpenedChartForIsland(openedChartForIsland) {
     this.setState({
       chartListOpen: false,
@@ -408,6 +497,12 @@ class Tracker extends React.PureComponent {
     this.setState({ lastLocation: null });
   }
 
+  toggleStartingItemMode() {
+    this.setState(prev => ({
+      isStartingItemMode: !prev.isStartingItemMode,
+    }));
+  }
+  
   updateSettingsWindowPosition(position) {
     this.updatePreferences({
       settingsWindowPosition: position,
@@ -416,23 +511,30 @@ class Tracker extends React.PureComponent {
 
   updatePreferences(preferenceChanges) {
     const {
+      clearAllIncludesBoss,
       clearAllIncludesMail,
-      disableLogic,
-      onlyProgressLocations,
       colors,
+      disableLogic,
+      enableItemCycling,
+      onlyProgressLocations,
       rightClickToClearAll,
       settingsWindowPosition,
       showBeedleLocations,
-      showSalvageCorpLocations,
+      showClearAll,
       showCyclosLocations,
+      showDungeonMapsAndCompasses,
       showGhostShipLocations,
-      trackNonProgressCharts,
+      showRequiredBossToggle,
+      showResetAll,
+      showSalvageCorpLocations,
       trackNonProgressBlueChuJelly,
+      trackNonProgressCharts,
       trackSpheres,
       viewingEntrances,
     } = this.state;
 
     const existingPreferences = {
+      clearAllIncludesBoss,
       clearAllIncludesMail,
       colors,
       disableLogic,
@@ -440,11 +542,15 @@ class Tracker extends React.PureComponent {
       rightClickToClearAll,
       settingsWindowPosition,
       showBeedleLocations,
-      showSalvageCorpLocations,
+      showClearAll,
       showCyclosLocations,
+      showDungeonMapsAndCompasses,
       showGhostShipLocations,
-      trackNonProgressCharts,
+      showRequiredBossToggle,
+      showResetAll,
+      showSalvageCorpLocations,
       trackNonProgressBlueChuJelly,
+      trackNonProgressCharts,
       trackSpheres,
       viewingEntrances,
     };
@@ -458,10 +564,13 @@ class Tracker extends React.PureComponent {
   render() {
     const {
       chartListOpen,
+      clearAllIncludesBoss,
       clearAllIncludesMail,
       colors,
       disableLogic,
+      enableItemCycling,
       isLoading,
+      isStartingItemMode,
       lastLocation,
       logic,
       onlyProgressLocations,
@@ -474,13 +583,17 @@ class Tracker extends React.PureComponent {
       saveData,
       settingsWindowOpen,
       settingsWindowPosition,
-      spheres,
       showBeedleLocations,
-      showSalvageCorpLocations,
+      showClearAll,
       showCyclosLocations,
+      showDungeonMapsAndCompasses,
       showGhostShipLocations,
-      trackNonProgressCharts,
+      showRequiredBossToggle,
+      showResetAll,
+      showSalvageCorpLocations,
+      spheres,
       trackNonProgressBlueChuJelly,
+      trackNonProgressCharts,
       trackSpheres,
       trackerState,
       viewingEntrances,
@@ -508,16 +621,21 @@ class Tracker extends React.PureComponent {
             <ItemsTable
               backgroundColor={itemsTableBackground}
               decrementItem={this.decrementItem}
+              disableStartingItemMode={this.disableStartingItemMode}
+              enableItemCycling={enableItemCycling}
               incrementItem={this.incrementItem}
+              isStartingItemMode={isStartingItemMode}
               spheres={spheres}
-              trackerState={trackerState}
-              trackSpheres={trackSpheres}
               trackNonProgressBlueChuJelly={trackNonProgressBlueChuJelly}
+              trackSpheres={trackSpheres}
+              trackerState={trackerState}
+              updateStartingItemCount={this.updateStartingItemCount}
             />
             <LocationsTable
               backgroundColor={extraLocationsBackground}
               chartListOpen={chartListOpen}
               clearAllLocations={this.clearAllLocations}
+              clearAllLocationsAndDisableBoss={this.clearAllLocationsAndDisableBoss}
               clearOpenedMenus={this.clearOpenedMenus}
               decrementItem={this.decrementItem}
               disableLogic={disableLogic}
@@ -529,24 +647,29 @@ class Tracker extends React.PureComponent {
               openedExit={openedExit}
               openedLocation={openedLocation}
               openedLocationIsDungeon={openedLocationIsDungeon}
+              resetZone={this.resetZone}
               rightClickToClearAll={rightClickToClearAll}
               showBeedleLocations={showBeedleLocations}
-              showSalvageCorpLocations={showSalvageCorpLocations}
+              showClearAll={showClearAll}
               showCyclosLocations={showCyclosLocations}
+              showDungeonMapsAndCompasses={showDungeonMapsAndCompasses}
               showGhostShipLocations={showGhostShipLocations}
+              showRequiredBossToggle={showRequiredBossToggle}
+              showResetAll={showResetAll}
+              showSalvageCorpLocations={showSalvageCorpLocations}
               spheres={spheres}
               toggleLocationChecked={this.toggleLocationChecked}
               toggleRequiredBoss={this.toggleRequiredBoss}
-              trackerState={trackerState}
-              trackNonProgressCharts={trackNonProgressCharts}
               trackNonProgressBlueChuJelly={trackNonProgressBlueChuJelly}
+              trackNonProgressCharts={trackNonProgressCharts}
               trackSpheres={trackSpheres}
-              updateChartMapping={this.updateChartMapping}
-              updateOpenedChartForIsland={this.updateOpenedChartForIsland}
+              trackerState={trackerState}
               unsetChartMapping={this.unsetChartMapping}
               unsetEntrance={this.unsetEntrance}
               unsetExit={this.unsetExit}
+              updateChartMapping={this.updateChartMapping}
               updateExitForEntrance={this.updateExitForEntrance}
+              updateOpenedChartForIsland={this.updateOpenedChartForIsland}
               updateOpenedEntrance={this.updateOpenedEntrance}
               updateOpenedExit={this.updateOpenedExit}
               updateOpenedLocation={this.updateOpenedLocation}
@@ -557,6 +680,8 @@ class Tracker extends React.PureComponent {
               disableLogic={disableLogic}
               logic={logic}
               onlyProgressLocations={onlyProgressLocations}
+              showDungeonMapsAndCompasses={showDungeonMapsAndCompasses}
+              viewingEntrances={viewingEntrances}
             />
           </div>
           {trackSpheres && (
@@ -569,35 +694,43 @@ class Tracker extends React.PureComponent {
           )}
           {settingsWindowOpen && (
             <SettingsWindow
+              clearAllIncludesBoss={clearAllIncludesBoss}
               clearAllIncludesMail={clearAllIncludesMail}
               disableLogic={disableLogic}
+              enableItemCycling={enableItemCycling}
               extraLocationsBackground={extraLocationsBackground}
               itemsTableBackground={itemsTableBackground}
               rightClickToClearAll={rightClickToClearAll}
               settingsWindowPosition={settingsWindowPosition}
               showBeedleLocations={showBeedleLocations}
-              showSalvageCorpLocations={showSalvageCorpLocations}
+              showClearAll={showClearAll}
               showCyclosLocations={showCyclosLocations}
+              showDungeonMapsAndCompasses={showDungeonMapsAndCompasses}
               showGhostShipLocations={showGhostShipLocations}
+              showRequiredBossToggle={showRequiredBossToggle}
+              showResetAll={showResetAll}
+              showSalvageCorpLocations={showSalvageCorpLocations}
               sphereTrackingBackground={sphereTrackingBackground}
               statisticsBackground={statisticsBackground}
               toggleSettingsWindow={this.toggleSettingsWindow}
-              trackNonProgressCharts={trackNonProgressCharts}
               trackNonProgressBlueChuJelly={trackNonProgressBlueChuJelly}
+              trackNonProgressCharts={trackNonProgressCharts}
               trackSpheres={trackSpheres}
               updatePreferences={this.updatePreferences}
               updateSettingsWindowPosition={this.updateSettingsWindowPosition}
             />
           )}
           <Buttons
-            settingsWindowOpen={settingsWindowOpen}
             chartListOpen={chartListOpen}
+            isStartingItemMode={isStartingItemMode}
             onlyProgressLocations={onlyProgressLocations}
             saveData={saveData}
+            settingsWindowOpen={settingsWindowOpen}
             toggleChartList={this.toggleChartList}
-            toggleSettingsWindow={this.toggleSettingsWindow}
             toggleEntrances={this.toggleEntrances}
             toggleOnlyProgressLocations={this.toggleOnlyProgressLocations}
+            toggleSettingsWindow={this.toggleSettingsWindow}
+            toggleStartingItemMode={this.toggleStartingItemMode}
             trackNonProgressCharts={trackNonProgressCharts}
             viewingEntrances={viewingEntrances}
           />

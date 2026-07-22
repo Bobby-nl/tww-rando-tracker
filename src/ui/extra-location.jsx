@@ -17,7 +17,7 @@ import RequirementsTooltip from './requirements-tooltip';
 import Tooltip from './tooltip';
 
 class ExtraLocation extends React.PureComponent {
-  static NUM_CONSISTENT_ITEMS = 4;
+  static NUM_CONSISTENT_ITEMS = 2;
 
   static ITEM_WIDTH = 24;
 
@@ -31,15 +31,22 @@ class ExtraLocation extends React.PureComponent {
     [LogicCalculation.LOCATION_COLORS.CHECKED_LOCATION]: 2,
   };
 
-  static getWidth() {
+  static getWidth(props = {}) {
+    const {
+      showDungeonMapsAndCompasses,
+      viewingEntrances,
+    } = props;
+
     const numItems = this.NUM_CONSISTENT_ITEMS
       + (Settings.getOptionValue(Permalink.OPTIONS.RANDOMIZE_DUNGEON_ENTRANCES) ? 1 : 0)
       + (Settings.getOptionValue(Permalink.OPTIONS.RANDOMIZE_MINIBOSS_ENTRANCES) ? 1 : 0)
-      + (Settings.getOptionValue(Permalink.OPTIONS.RANDOMIZE_BOSS_ENTRANCES) ? 1 : 0)
-      + (Settings.getOptionValue(Permalink.OPTIONS.BOSS_SOUL_SHUFFLE) ? 1 : 0);
+      + (Settings.getOptionValue(Permalink.OPTIONS.BOSS_SOUL_SHUFFLE) ? 1 : 0)
+      + (showDungeonMapsAndCompasses ? 2 : 0)
+      + (!viewingEntrances ? 1 : 0);
 
     return Math.max(this.ITEM_WIDTH * numItems + this.EXTRA_WIDTH, this.MIN_WIDTH);
   }
+
 
   compassItem() {
     const {
@@ -48,9 +55,10 @@ class ExtraLocation extends React.PureComponent {
       incrementItem,
       locationName,
       setSelectedItem,
+      showDungeonMapsAndCompasses,
       spheres,
-      trackerState,
       trackSpheres,
+      trackerState,
     } = this.props;
 
     const compassName = LogicHelper.compassName(locationName);
@@ -60,7 +68,9 @@ class ExtraLocation extends React.PureComponent {
     if (trackSpheres) {
       locations = trackerState.getLocationsForItem(compassName);
     }
-
+    if (!showDungeonMapsAndCompasses) {
+      return null;
+    }
     return (
       <div className="dungeon-item compass">
         <Item
@@ -85,9 +95,10 @@ class ExtraLocation extends React.PureComponent {
       incrementItem,
       locationName,
       setSelectedItem,
+      showDungeonMapsAndCompasses,
       spheres,
-      trackerState,
       trackSpheres,
+      trackerState,
     } = this.props;
 
     const dungeonMapName = LogicHelper.dungeonMapName(locationName);
@@ -97,6 +108,9 @@ class ExtraLocation extends React.PureComponent {
     if (trackSpheres) {
       locations = trackerState.getLocationsForItem(dungeonMapName);
     }
+    if (!showDungeonMapsAndCompasses) {
+      return null;
+	  }
 
     return (
       <div className="dungeon-item dungeon-map">
@@ -123,8 +137,8 @@ class ExtraLocation extends React.PureComponent {
       locationName,
       setSelectedItem,
       spheres,
-      trackerState,
       trackSpheres,
+      trackerState,
     } = this.props;
 
     const smallKeyName = LogicHelper.smallKeyName(locationName);
@@ -160,8 +174,8 @@ class ExtraLocation extends React.PureComponent {
       locationName,
       setSelectedItem,
       spheres,
-      trackerState,
       trackSpheres,
+      trackerState,
     } = this.props;
 
     const bigKeyName = LogicHelper.bigKeyName(locationName);
@@ -424,12 +438,16 @@ class ExtraLocation extends React.PureComponent {
   render() {
     const {
       clearAllLocations,
+      clearAllLocationsAndDisableBoss,
       clearSelectedLocation,
       isDungeon,
       locationName,
       rightClickToClearAll,
       setSelectedLocation,
+      showDungeonMapsAndCompasses,
+      trackerState,
       updateOpenedLocation,
+      viewingEntrances,
     } = this.props;
 
     const updateOpenedLocationFunc = () => updateOpenedLocation({
@@ -446,6 +464,13 @@ class ExtraLocation extends React.PureComponent {
         clearAllLocations(locationName);
       }
     };
+    
+    const clearAllLocationsAndClearRequiredBossFunc = (event) => {
+      event.preventDefault();
+      if (rightClickToClearAll) {
+        clearAllLocationsAndDisableBoss(locationName);
+      }
+    };
 
     return (
       <div
@@ -453,14 +478,15 @@ class ExtraLocation extends React.PureComponent {
         onBlur={clearSelectedLocation}
         onClick={updateOpenedLocationFunc}
         onContextMenu={ContextMenuWrapper.onRightClick(clearAllLocationsFunc)}
+        onMouseDown={ContextMenuWrapper.onMiddleClick(clearAllLocationsAndClearRequiredBossFunc)}
         onFocus={setSelectedLocationFunc}
         onKeyDown={KeyDownWrapper.onSpaceKey(updateOpenedLocationFunc)}
         onMouseOver={setSelectedLocationFunc}
         onMouseOut={clearSelectedLocation}
         role="button"
         tabIndex="0"
-        style={{ width: ExtraLocation.getWidth() }}
-      >
+        style={{width: ExtraLocation.getWidth(this.props)}}
+		    >
         {this.dungeonItems()}
         {this.locationIcon()}
         {this.chestsCounter()}
@@ -471,6 +497,7 @@ class ExtraLocation extends React.PureComponent {
 
 ExtraLocation.propTypes = {
   clearAllLocations: PropTypes.func.isRequired,
+  clearAllLocationsAndDisableBoss: PropTypes.func.isRequired,
   clearSelectedItem: PropTypes.func.isRequired,
   clearSelectedLocation: PropTypes.func.isRequired,
   decrementItem: PropTypes.func.isRequired,
@@ -485,9 +512,10 @@ ExtraLocation.propTypes = {
   setSelectedExit: PropTypes.func.isRequired,
   setSelectedItem: PropTypes.func.isRequired,
   setSelectedLocation: PropTypes.func.isRequired,
+  showDungeonMapsAndCompasses: PropTypes.bool.isRequired,
   spheres: PropTypes.instanceOf(Spheres).isRequired,
-  trackerState: PropTypes.instanceOf(TrackerState).isRequired,
   trackSpheres: PropTypes.bool.isRequired,
+  trackerState: PropTypes.instanceOf(TrackerState).isRequired,
   unsetEntrance: PropTypes.func.isRequired,
   unsetExit: PropTypes.func.isRequired,
   updateOpenedEntrance: PropTypes.func.isRequired,
